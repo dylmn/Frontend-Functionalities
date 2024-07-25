@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import atm_abi from "../artifacts/contracts/Assessment.sol/Assessment.json";
+import atm_abi from "../artifacts/contracts/petCurrency.sol/petCurrency.json";
 
 export default function HomePage() {
   const [ethWallet, setEthWallet] = useState(undefined);
@@ -12,6 +12,7 @@ export default function HomePage() {
   const [transferAmount, setTransferAmount] = useState(1); // default to 1 ETH for transfer
   const [lookupAddress, setLookupAddress] = useState(''); // state for address to lookup balance
   const [lookupResult, setLookupResult] = useState(undefined); // state for balance lookup result
+  const [ownPet, setOwnedPet] = useState(false);
 
 
   const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
@@ -58,9 +59,9 @@ export default function HomePage() {
     setATM(atmContract);
   };
 
-  const getBalance = async () => {
+  const getPetBalance = async () => {
     if (atm) {
-      const balanceInWei = await atm.getBalance();
+      const balanceInWei = await atm.getPetBalance();
       const balanceInEth = ethers.utils.formatEther(balanceInWei);
       setBalance(Math.floor(parseFloat(balanceInEth)));
     }
@@ -79,33 +80,72 @@ export default function HomePage() {
     }
   };
   
+  const getOwnedPet = async () => {
+    if (atm) {
+        const ownedPet = await atm.ownedPet();
+        setOwnedPet(ownedPet);
+    }
+  }
 
-  const deposit = async () => {
+  const petDeposit = async () => {
     if (atm) {
       const amountInWei = ethers.utils.parseEther(amount.toString());
-      let tx = await atm.deposit(amountInWei, { value: amountInWei });
+      let tx = await atm.petDeposit(amountInWei, { value: amountInWei });
       await tx.wait();
-      getBalance();
+      getPetBalance();
     }
   };
 
-  const withdraw = async () => {
+  const petWithdraw = async () => {
     if (atm) {
       const amountInWei = ethers.utils.parseEther(amount.toString());
-      let tx = await atm.withdraw(amountInWei);
+      let tx = await atm.petWithdraw(amountInWei);
       await tx.wait();
-      getBalance();
+      getPetBalance();
     }
   };
 
-  const transfer = async () => {
+  const petTransfer = async () => {
     if (atm) {
       const amountInWei = ethers.utils.parseEther(transferAmount.toString());
-      let tx = await atm.transfer(recipient, amountInWei);
+      let tx = await atm.petTransfer(recipient, amountInWei);
       await tx.wait();
-      getBalance();
+      getPetBalance();
     }
   };
+
+  const buyPet = async () => {
+    if (atm) {
+      const petPriceInWei = ethers.BigNumber.from("1");
+
+      try {
+          const tx = await atm.buyPet();
+          await tx.wait();
+          getPetBalance();
+          getOwnedPet();
+          alert("Pet purchased successfully");
+      } catch (error) {
+          console.error("Error during pet purchase:", error);
+          alert('Failed to buy pet.');
+      }
+    };
+  }
+  
+  const sellPet = async () => {
+    if (atm) {
+      try {
+        let tx = atm.sellPet();
+        await tx.wait();
+        getPetBalance();
+        getOwnedPet();
+        alert('Pet sold successfully!');
+      } catch (error) {
+        console.error(error);
+        alert('Failed to sell pet.');
+      }
+    }
+  };
+  
   
 
   const initUser = () => {
@@ -120,13 +160,15 @@ export default function HomePage() {
     }
 
     if (balance === undefined) {
-      getBalance();
+      getPetBalance();
     }
+
+    getOwnedPet();
 
     return (
       <div>
           <p><span style={{ fontWeight: 'bold', fontSize: '1.2rem'}}>Your Account: </span>{account}</p>
-          <p><span style={{ fontWeight: 'bold', fontSize: '1.2rem'}}>Your Balance: </span>{balance} ETH</p>
+          <p><span style={{ fontWeight: 'bold', fontSize: '1.2rem'}}>Your Pet Balance: </span>{balance} ETH</p>
         <div>
           <label style={{fontWeight: 'bold', fontSize: '1.2rem'}}>
             Amount (ETH): &nbsp;
@@ -140,18 +182,38 @@ export default function HomePage() {
         </div>
         <div style={{ marginTop: '5px', marginBottom: '10px'}}>
           <button style={{ backgroundColor: 'white', color: 'black', fontSize: '1.2rem', border: '1px solid black', padding: '8px 16px', cursor: 'pointer', }}
-            onClick={deposit} onMouseEnter={(e) => { e.target.style.backgroundColor = 'black'; e.target.style.color = 'white'; }}
+            onClick={petDeposit} onMouseEnter={(e) => { e.target.style.backgroundColor = 'black'; e.target.style.color = 'white'; }}
             onMouseLeave={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = 'black'; }} >
             Deposit
           </button>
            &nbsp;
           <button style={{ backgroundColor: 'white', color: 'black', fontSize: '1.2rem', border: '1px solid black', padding: '8px 16px', cursor: 'pointer', }}
-            onClick={withdraw} onMouseEnter={(e) => { e.target.style.backgroundColor = 'black'; e.target.style.color = 'white'; }}
+            onClick={petWithdraw} onMouseEnter={(e) => { e.target.style.backgroundColor = 'black'; e.target.style.color = 'white'; }}
             onMouseLeave={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = 'black'; }} >
             Withdraw
           </button>
         </div>
         <hr></hr>
+        <p>
+            <span style={{ fontWeight: 'bold', fontSize: '1.2rem' }}>Pet Status: </span>
+            {ownPet ? "You own a pet" : "You don't own a pet yet"}
+        </p>
+        <div style={{ marginTop: '5px', marginBottom: '10px'}}>
+          <button style={{ backgroundColor: 'white', color: 'black', fontSize: '1.2rem', border: '1px solid black', padding: '8px 16px', cursor: 'pointer' }}
+            onClick={buyPet} onMouseEnter={(e) => { e.target.style.backgroundColor = 'black'; e.target.style.color = 'white'; }}
+            onMouseLeave={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = 'black'; }}>
+            Buy Pet
+          </button>
+          &nbsp;
+          <button style={{ backgroundColor: 'white', color: 'black', fontSize: '1.2rem', border: '1px solid black', padding: '8px 16px', cursor: 'pointer' }}
+            onClick={sellPet} onMouseEnter={(e) => { e.target.style.backgroundColor = 'black'; e.target.style.color = 'white'; }}
+            onMouseLeave={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = 'black'; }}>
+            Sell Pet
+          </button>
+        </div>
+
+        <hr></hr>
+
         <div>
           <label style={{fontWeight: 'bold', fontSize: '1.2rem'}}>
             To (Address): &nbsp;
@@ -173,9 +235,10 @@ export default function HomePage() {
             />
           </label>
         </div>
+
         <div style={{ marginTop: '5px', marginBottom: '10px'}}>
         <button style={{ backgroundColor: 'white', color: 'black', fontSize: '1.2rem', border: '1px solid black', padding: '8px 16px', cursor: 'pointer', }}
-            onClick={transfer} onMouseEnter={(e) => { e.target.style.backgroundColor = 'black'; e.target.style.color = 'white'; }}
+            onClick={petTransfer} onMouseEnter={(e) => { e.target.style.backgroundColor = 'black'; e.target.style.color = 'white'; }}
             onMouseLeave={(e) => { e.target.style.backgroundColor = 'white'; e.target.style.color = 'black'; }} >
             Transfer
           </button>
@@ -214,7 +277,7 @@ export default function HomePage() {
   return (
     <main className="container">
       <header>
-        <h1>Welcome to the Metacrafters ATM!</h1>
+        <h1>Welcome to the <br></br> Digital Petshop ATM!</h1>
       </header>
       {initUser()}
       <style jsx>{`
