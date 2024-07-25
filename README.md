@@ -2,7 +2,7 @@
 
 ### Description
 
-The Metacrafters ATM smart contract provides essential functionalities for managing Ethereum deposits, withdrawals, transfers, and balance lookups. It is integrated into frontend REACT JS applications, allowing users to interact with their Ethereum balances.
+The PetToken ATM smart contract provides essential functionalities for managing Ethereum deposits, withdrawals, transfers, and balance lookups. It is integrated into frontend REACT JS applications, allowing users to interact with their Ethereum balances.
 
 ### Getting Started
 
